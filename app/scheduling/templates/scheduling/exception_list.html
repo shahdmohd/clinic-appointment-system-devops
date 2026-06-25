@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Schedule Exceptions - ClinicLife{% endblock %}
+
+{% block content %}
+<div class="schedule-container fade-in-up">
+
+    <div class="schedule-page-header">
+        <div>
+            <div class="section-title"><i class="fa-solid fa-calendar-xmark"></i> Exceptions</div>
+            <h1>Schedule Exceptions</h1>
+            <p>Doctor day-offs, leaves, and modified working hours.</p>
+        </div>
+        <div class="schedule-header-actions">
+            <a href="{% url 'schedule_list' %}" class="btn btn-icon" style="text-decoration:none; font-size:0.85rem;">
+                <i class="fa-solid fa-calendar-week"></i> Weekly Schedules
+            </a>
+            <a href="{% url 'exception_create' %}" class="btn-primary btn-icon" style="text-decoration:none; font-size:0.85rem;">
+                <i class="fa-solid fa-plus"></i> Add Exception
+            </a>
+        </div>
+    </div>
+
+    <!-- Upcoming Exceptions -->
+    <div style="margin-bottom:2rem;">
+        <div class="sub-section-heading">
+            <h4><i class="fa-regular fa-clock" style="color:var(--primary); margin-right:0.3rem;"></i> Upcoming</h4>
+            {% if upcoming_exceptions %}
+            <span class="count-pill">{{ upcoming_exceptions|length }}</span>
+            {% endif %}
+        </div>
+
+        {% if upcoming_exceptions %}
+        <div class="exception-grid">
+            {% for exception in upcoming_exceptions %}
+            <div class="exception-card {% if exception.is_day_off %}day-off{% else %}modified{% endif %}">
+
+                <div class="exception-card-header">
+                    <h6>
+                        <i class="fa-solid fa-user-doctor" style="color:var(--accent); margin-right:0.3rem;"></i>
+                        Dr. {{ exception.doctor.get_full_name|default:exception.doctor.username }}
+                    </h6>
+                    <span class="exception-type-badge {% if exception.is_day_off %}day-off{% else %}modified{% endif %}">
+                        {% if exception.is_day_off %}Day Off{% else %}Modified{% endif %}
+                    </span>
+                </div>
+
+                <div class="exception-detail date-row">
+                    <i class="fa-regular fa-calendar"></i>
+                    {{ exception.date|date:"l, M d, Y" }}
+                </div>
+
+                {% if not exception.is_day_off %}
+                <div class="exception-detail">
+                    <i class="fa-regular fa-clock"></i>
+                    {{ exception.override_start_time|time:"h:i A" }} – {{ exception.override_end_time|time:"h:i A" }}
+                </div>
+                {% endif %}
+
+                {% if exception.reason %}
+                <div class="exception-detail muted">
+                    <i class="fa-regular fa-comment"></i>
+                    {{ exception.reason }}
+                </div>
+                {% endif %}
+
+                <div class="exception-card-actions">
+                    <a href="{% url 'exception_update' exception.pk %}" class="edit">
+                        <i class="fa-solid fa-pencil"></i> Edit
+                    </a>
+                    <a href="{% url 'exception_delete' exception.pk %}" class="delete">
+                        <i class="fa-solid fa-trash"></i> Delete
+                    </a>
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fa-solid fa-circle-check" style="color:var(--accent); opacity:0.5;"></i>
+            No upcoming exceptions — all doctors follow their regular schedules.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Past Exceptions -->
+    <div>
+        <div class="sub-section-heading">
+            <h4><i class="fa-solid fa-box-archive" style="color:var(--text-muted); margin-right:0.3rem;"></i> Past</h4>
+            {% if past_exceptions %}
+            <span class="count-pill muted">{{ past_exceptions|length }}</span>
+            {% endif %}
+        </div>
+
+        {% if past_exceptions %}
+        <button class="past-section-toggle" id="pastToggle" type="button">
+            <span>Show {{ past_exceptions|length }} past exception{{ past_exceptions|length|pluralize }}</span>
+            <i class="fa-solid fa-chevron-down toggle-chevron"></i>
+        </button>
+
+        <div class="past-section-body" id="pastBody">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="padding:0.8rem 1rem;">Doctor</th>
+                            <th style="padding:0.8rem 1rem;">Date</th>
+                            <th style="padding:0.8rem 1rem;">Type</th>
+                            <th style="padding:0.8rem 1rem;">Hours</th>
+                            <th style="padding:0.8rem 1rem;">Reason</th>
+                            <th style="padding:0.8rem 1rem;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exception in past_exceptions %}
+                        <tr>
+                            <td style="padding:0.75rem 1rem; color:var(--text-secondary);">
+                                Dr. {{ exception.doctor.get_full_name|default:exception.doctor.username }}
+                            </td>
+                            <td style="padding:0.75rem 1rem; color:var(--text-muted); font-size:0.85rem;">
+                                {{ exception.date|date:"M d, Y" }}
+                            </td>
+                            <td style="padding:0.75rem 1rem;">
+                                <span class="exception-type-badge {% if exception.is_day_off %}day-off{% else %}modified{% endif %}">
+                                    {% if exception.is_day_off %}Day Off{% else %}Modified{% endif %}
+                                </span>
+                            </td>
+                            <td style="padding:0.75rem 1rem; color:var(--text-muted); font-size:0.85rem;">
+                                {% if not exception.is_day_off %}
+                                    {{ exception.override_start_time|time:"h:i A" }} – {{ exception.override_end_time|time:"h:i A" }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td style="padding:0.75rem 1rem; color:var(--text-muted); font-size:0.85rem;">
+                                {{ exception.reason|default:"—" }}
+                            </td>
+                            <td style="padding:0.75rem 1rem;">
+                                <a href="{% url 'exception_delete' exception.pk %}" class="day-action-btn delete" title="Delete">
+                                    <i class="fa-solid fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% else %}
+        <div class="empty-state" style="padding:1.5rem;">
+            <i class="fa-solid fa-inbox"></i>
+            No past exceptions on record.
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+{% block extra_js %}
+<script>
+    const toggle = document.getElementById('pastToggle');
+    const body   = document.getElementById('pastBody');
+    if (toggle && body) {
+        toggle.addEventListener('click', () => {
+            const open = body.classList.toggle('visible');
+            toggle.classList.toggle('open', open);
+        });
+    }
+</script>
+{% endblock %}
+
+{% endblock %}

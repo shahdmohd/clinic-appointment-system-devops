@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load schedule_tags %}
+{% block title %}Doctor Schedules - ClinicLife{% endblock %}
+
+{% block content %}
+<div class="schedule-container fade-in-up">
+
+    <div class="schedule-page-header">
+        <div>
+            <div class="section-title"><i class="fa-solid fa-calendar-week"></i> Scheduling</div>
+            <h1>Doctor Weekly Schedules</h1>
+            <p>Manage each doctor's working hours and slot configuration.</p>
+        </div>
+        <div class="schedule-header-actions">
+            <a href="{% url 'exception_list' %}" class="btn btn-icon" style="text-decoration:none; font-size:0.85rem;">
+                <i class="fa-solid fa-calendar-xmark"></i> Exceptions
+            </a>
+            <a href="{% url 'schedule_create' %}" class="btn-primary btn-icon" style="text-decoration:none; font-size:0.85rem;">
+                <i class="fa-solid fa-plus"></i> Add Schedule
+            </a>
+        </div>
+    </div>
+
+    {% if grouped_schedules %}
+        {% for doctor, days in grouped_schedules.items %}
+        <div class="doctor-schedule-block">
+
+            <div class="doctor-block-header">
+                <h5>
+                    <i class="fa-solid fa-user-doctor" style="color:var(--accent);"></i>
+                    Dr. {{ doctor.get_full_name|default:doctor.username }}
+                </h5>
+                <span class="days-count-badge">{{ days|length }} day{{ days|length|pluralize }}</span>
+            </div>
+
+            <div class="week-grid-scroll">
+                <div class="week-grid">
+                    {% for day_name in day_names %}
+                        {% with schedule=days|get_item:day_name %}
+                        <div class="day-col">
+                            <div class="day-col-header {% if schedule %}has-schedule{% else %}no-schedule{% endif %}">
+                                {{ day_name }}
+                            </div>
+                            <div class="day-col-body {% if schedule %}has-schedule{% else %}no-schedule{% endif %}">
+                                {% if schedule %}
+                                    <div class="day-time">
+                                        {{ schedule.start_time|time:"H:i" }}
+                                        <span class="day-time-sep">–</span>
+                                        {{ schedule.end_time|time:"H:i" }}
+                                    </div>
+                                    <div class="day-meta">
+                                        <i class="fa-regular fa-clock"></i> {{ schedule.slot_duration }}min slots
+                                        {% if schedule.buffer_time %}
+                                            <br><i class="fa-solid fa-pause"></i> {{ schedule.buffer_time }}min buffer
+                                        {% endif %}
+                                    </div>
+                                    <div class="day-actions">
+                                        <a href="{% url 'schedule_update' schedule.pk %}" class="day-action-btn edit" title="Edit">
+                                            <i class="fa-solid fa-pencil"></i>
+                                        </a>
+                                        <a href="{% url 'schedule_delete' schedule.pk %}" class="day-action-btn delete" title="Delete">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </a>
+                                    </div>
+                                {% else %}
+                                    <i class="fa-solid fa-moon day-off-icon"></i>
+                                    <span class="day-off-label">Day Off</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fa-regular fa-calendar-xmark"></i>
+            No schedules found. Click <strong>Add Schedule</strong> to create one.
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

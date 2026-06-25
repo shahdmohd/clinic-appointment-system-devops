@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Schedule - ClinicLife{% endblock %}
+{% block extra_css %}
+<style>
+    input[type="time"],
+    input[type="date"] {
+        color-scheme: dark;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="form-page-container fade-in-up">
+
+    <a href="{% url 'schedule_list' %}" class="back-link">
+        <i class="fa-solid fa-arrow-left"></i> Back to Schedules
+    </a>
+
+    <div class="form-card">
+
+        <div class="form-card-header">
+            <div class="form-card-header-icon blue">
+                <i class="fa-solid fa-calendar-plus"></i>
+            </div>
+            <h4>{% if form.instance.pk %}Edit Schedule{% else %}Create New Schedule{% endif %}</h4>
+        </div>
+
+        <div class="form-card-body">
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger" style="margin-bottom:1rem;">
+                {% for error in form.non_field_errors %}
+                <p style="margin:0;">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <p class="help-text">{{ field.help_text }}</p>
+                    {% endif %}
+                    {% if field.errors %}
+                        {% for error in field.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="form-card-footer" style="margin:1.5rem -1.5rem -1.5rem; border-radius:0 0 var(--radius-md) var(--radius-md);">
+                    <a href="{% url 'schedule_list' %}" class="btn btn-icon" style="text-decoration:none; font-size:0.85rem;">
+                        <i class="fa-solid fa-xmark"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn-primary btn-icon" style="font-size:0.88rem;">
+                        <i class="fa-solid fa-check"></i>
+                        {% if form.instance.pk %}Update{% else %}Create{% endif %} Schedule
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

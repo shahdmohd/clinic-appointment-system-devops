@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Receptionist Dashboard - ClinicLife{% endblock %}
+
+{% block content %}
+<div class="dashboard-container fade-in-up">
+
+    <!-- Header -->
+    <div class="dashboard-card" style="margin-bottom:1.5rem; padding:1.6rem 2rem; border-left:3px solid var(--warning);">
+        <div class="section-title" style="color:var(--warning);"><i class="fa-solid fa-headset"></i> Receptionist Portal</div>
+        <h2 style="margin:0 0 0.25rem;">{{ user.get_full_name|default:user.username }}</h2>
+        <p style="color:var(--text-muted); margin:0; font-size:0.9rem;">Manage patient check-ins, doctor schedules, and clinic bookings.</p>
+    </div>
+
+    <div class="dashboard-grid">
+
+          <!-- Queue Management -->
+        <div class="dashboard-card" style="padding:1.4rem;">
+            <div class="section-title"><i class="fa-solid fa-list-ol"></i> Queue</div>
+            <h3 style="margin:0 0 0.5rem;">Queue Manager</h3>
+            <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.25rem;">View and manage all patient appointment requests.</p>
+            <a href="{% url 'queue_manager' %}" class="btn btn-icon" style="text-decoration:none; font-size:0.85rem; width: 65%;">
+                <i class="fa-solid fa-list"></i> Open Queue Manager
+            </a>
+            
+            <a href="{% url 'staff_appointments' %}" class="btn btn-icon" style="text-decoration:none; font-size:0.85rem; width: 65%; margin-top: 10px;">
+                <i class="fa-solid fa-calendar-days"></i> Search Appointments
+            </a>
+        </div>
+
+        <!-- Today's Confirmed -->
+         <div class="dashboard-card" style="padding:1.4rem;">
+            <div class="section-title"><i class="fa-solid fa-list-ol"></i> Confirmed</div>
+            <h3 style="margin:0 0 0.5rem;">Today's Appointments</h3>
+            <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.25rem;">View and manage all patient appointment requests.</p>
+            <a href="{% url 'confirmed_appointments' %}" class="btn btn-icon" style="text-decoration:none; font-size:0.85rem;">
+                <i class="fa-solid fa-list"></i> Open Confirmed List
+            </a>
+            
+        </div>
+
+      
+
+        <!-- Doctor Schedules -->
+        <div class="dashboard-card" style="padding:1.4rem;">
+            <div class="section-title"><i class="fa-solid fa-calendar-days"></i> Schedules</div>
+            <h3 style="margin:0 0 0.5rem;">Doctor Schedules</h3>
+            <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1rem;">View and manage doctor availability slots.</p>
+            <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                <a href="{% url 'schedule_list' %}" class="btn btn-icon" style="text-decoration:none; font-size:0.85rem;">
+                    <i class="fa-solid fa-calendar"></i> Schedules
+                </a>
+                <a href="{% url 'exception_list' %}" class="btn btn-icon" style="text-decoration:none; font-size:0.85rem;">
+                    <i class="fa-solid fa-calendar-xmark"></i> Exceptions
+                </a>
+            </div>
+        </div>
+
+        <!-- My Profile -->
+        <div class="dashboard-card" style="padding:1.4rem;">
+            <div class="section-title"><i class="fa-solid fa-user"></i> Profile</div>
+            <h3 style="margin:0 0 0.4rem;">My Account</h3>
+            <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1rem; font-weight:600;">{{ user.username }}</p>
+            <a href="{% url 'update_profile' %}" class="btn btn-icon" style="text-decoration:none; font-size:0.85rem;">
+                <i class="fa-solid fa-user-pen"></i> Update Profile
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

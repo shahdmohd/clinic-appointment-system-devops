@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Reschedule Appointment - ClinicLife{% endblock %}
+
+{% block content %}
+<div class="booking-wrapper fade-in-up">
+
+
+
+    <div class="booking-header">
+        <p class="eyebrow">Change of Plans</p>
+        <h1>Pick a new <em>time slot</em></h1>
+    </div>
+
+    <!-- Current appointment banner -->
+    <div class="current-apt">
+        <div class="current-apt-icon">
+            <i class="fa-regular fa-calendar"></i>
+        </div>
+        <div class="current-apt-info">
+            <strong>Current Appointment</strong>
+            Dr. {{ appointment.doctor.get_full_name|default:appointment.doctor.username }}
+            &nbsp;·&nbsp;
+            {{ appointment.start_datetime|date:"M d, Y" }}
+            &nbsp;·&nbsp;
+            {{ appointment.start_datetime|time:"h:i A" }} – {{ appointment.end_datetime|time:"h:i A" }}
+        </div>
+    </div>
+
+    <div class="booking-card">
+        <form method="POST" id="rescheduleForm">
+           
+            {% csrf_token %}
+
+            <input type="hidden" name="doctor" value="{{ appointment.doctor.id }}">
+
+            <!-- Doctor (read-only display) -->
+            <div class="field-group">
+                <label class="field-label">Doctor</label>
+                <div class="field-control readonly">
+                    Dr. {{ appointment.doctor.get_full_name|default:appointment.doctor.username }}
+                </div>
+            </div>
+
+            <!-- New Date -->
+            <div class="field-group">
+                <label class="field-label" for="dateInput">New Date</label>
+                <input type="date" id="dateInput" class="field-control"
+                       min="{{ today|date:'Y-m-d' }}" required>
+            </div>
+
+            <!-- Slots -->
+            <div id="slotsSection" style="display:none;">
+                <div class="section-divider"><span>Available Times</span></div>
+
+                <div id="slotsLoading" class="slots-loading" style="display:none;">
+                    <div class="spinner"></div>
+                    <span>Finding available slots…</span>
+                </div>
+
+                <div id="noSlots" class="no-slots-msg" style="display:none;">
+                    No available slots for this date.
+                </div>
+
+                <div id="slotsContainer"></div>
+
+                <div class="selected-indicator" id="selectedIndicator">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span id="selectedLabel">Slot selected</span>
+                </div>
+            </div>
+
+            <input type="hidden" name="start_datetime" id="selectedStart">
+            <input type="hidden" name="end_datetime" id="selectedEnd">
+
+            <!-- Reason -->
+            <div class="section-divider"><span>Details</span></div>
+
+            <div class="field-group">
+                <label class="field-label" for="reasonInput">Reason for Rescheduling</label>
+                <textarea name="reason" id="reasonInput" class="field-control"
+                          placeholder="Why are you rescheduling this appointment?" required></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                <i class="fa-solid fa-rotate"></i> Confirm Reschedule
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const DOCTOR_ID         = "{{ appointment.doctor.id }}";
+    const dateInput         = document.getElementById('dateInput');
+    const slotsSection      = document.getElementById('slotsSection');
+    const slotsContainer    = document.getElementById('slotsContainer');
+    const slotsLoading      = document.getElementById('slotsLoading');
+    const noSlots           = document.getElementById('noSlots');
+    const selectedStart     = document.getElementById('selectedStart');
+    const selectedEnd       = document.getElementById('selectedEnd');
+    const submitBtn         = document.getElementById('submitBtn');
+    const selectedIndicator = document.getElementById('selectedIndicator');
+    const selectedLabel     = document.getElementById('selectedLabel');
+
+    function resetSlots() {
+        slotsContainer.innerHTML = '';
+        selectedStart.value = '';
+        selectedEnd.value   = '';
+        submitBtn.disabled  = true;
+        noSlots.style.display = 'none';
+        selectedIndicator.classList.remove('visible');
+    }
+
+    function fetchSlots() {
+        const date = dateInput.value;
+        if (!date) return;
+
+        resetSlots();
+        slotsSection.style.display = 'block';
+        slotsLoading.style.display = 'flex';
+
+        fetch(`/available-slots/?doctor_id=${DOCTOR_ID}&date=${date}`)
+            .then(res => { if (!res.ok) throw new Error(); return res.json(); })
+            .then(data => {
+                slotsLoading.style.display = 'none';
+                if (!data.slots || data.slots.length === 0) {
+                    noSlots.style.display = 'block';
+                    return;
+                }
+                data.slots.forEach(slot => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'slot-btn';
+                    const startTime = slot.start.split(' ')[1];
+                    const endTime   = slot.end.split(' ')[1];
+                    btn.textContent = `${startTime} – ${endTime}`;
+                    btn.addEventListener('click', () => {
+                        slotsContainer.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        selectedStart.value = slot.start;
+                        selectedEnd.value   = slot.end;
+                        submitBtn.disabled  = false;
+                        selectedLabel.textContent = `${startTime} – ${endTime} selected`;
+                        selectedIndicator.classList.add('visible');
+                    });
+                    slotsContainer.appendChild(btn);
+                });
+            })
+            .catch(() => {
+                slotsLoading.style.display = 'none';
+                noSlots.textContent = 'Failed to load slots. Please try again.';
+                noSlots.style.display = 'block';
+            });
+    }
+
+    dateInput.addEventListener('change', fetchSlots);
+</script>
+{% endblock %}

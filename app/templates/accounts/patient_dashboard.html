@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+{% block title %}Patient Dashboard - ClinicLife{% endblock %}
+
+{% block extra_css %}
+<style>
+    .action-link {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.95rem 1.1rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: rgba(8, 17, 42, 0.5);
+        text-decoration: none;
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .action-link:hover {
+        transform: translateX(4px);
+        border-color: var(--border-hover);
+        background: rgba(22, 32, 51, 0.75);
+        color: var(--text-main);
+    }
+
+    .action-link.primary {
+        background: linear-gradient(135deg, rgba(37,99,235,0.18), rgba(8,145,178,0.1));
+        border-color: rgba(37,99,235,0.4);
+    }
+
+    .action-link.primary:hover {
+        background: linear-gradient(135deg, rgba(37,99,235,0.28), rgba(8,145,178,0.18));
+        border-color: rgba(59,130,246,0.6);
+    }
+
+    .action-link-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+    }
+
+    .action-link-body { flex: 1; min-width: 0; }
+
+    .action-link-title {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: var(--text-main);
+        line-height: 1.2;
+    }
+
+    .action-link-desc {
+        font-size: 0.76rem;
+        color: var(--text-muted);
+        margin-top: 0.1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .action-link-chevron {
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        flex-shrink: 0;
+        transition: transform 0.2s, color 0.2s;
+    }
+
+    .action-link:hover .action-link-chevron {
+        transform: translateX(3px);
+        color: var(--primary);
+    }
+    /* spacing between sections */
+    .dashboard-grid{
+        margin-bottom:1.6rem;
+    }
+
+    /* Doctors Section */
+    .doctors-grid{
+        display:grid;
+        grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+        gap:1.2rem;
+        margin-top:1rem;
+    }
+
+    /* Doctor Card */
+    .doctor-card{
+        background:rgba(10,20,40,0.65);
+        border:1px solid var(--border);
+        border-radius:14px;
+        padding:1.4rem;
+        text-align:center;
+        transition:var(--transition);
+        position:relative;
+    }
+
+    .doctor-card:hover{
+        transform:translateY(-4px);
+        border-color:var(--border-hover);
+        background:rgba(20,30,55,0.8);
+    }
+
+    /* doctor avatar */
+    .doctor-avatar{
+        width:64px;
+        height:64px;
+        border-radius:50%;
+        margin:0 auto 0.6rem;
+        background:linear-gradient(135deg,#2563eb,#0891b2);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:1.4rem;
+        color:white;
+    }
+
+    /* doctor name */
+    .doctor-name{
+        font-weight:700;
+        font-size:0.95rem;
+        margin-bottom:0.15rem;
+    }
+
+    /* specialization */
+    .doctor-specialty{
+        font-size:0.75rem;
+        color:var(--text-muted);
+        margin-bottom:0.5rem;
+    }
+
+    /* rating */
+    .doctor-rating{
+        color:#facc15;
+        font-size:0.8rem;
+        margin-bottom:0.7rem;
+    }
+
+    /* book button */
+    .book-btn{
+        display:inline-block;
+        padding:0.45rem 0.8rem;
+        border-radius:8px;
+        background:var(--primary);
+        color:white;
+        font-size:0.78rem;
+        text-decoration:none;
+        transition:var(--transition);
+    }
+
+    .book-btn:hover{
+        background:var(--primary-dark);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container fade-in-up">
+
+    <!-- Profile Header -->
+    <div class="dashboard-card" style="margin-bottom:1.5rem; padding:1.75rem 2rem; border-left:3px solid var(--primary-dark);">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+            <div style="flex:1;">
+                <div class="section-title"><i class="fa-solid fa-heart-pulse"></i> Patient Portal</div>
+                <h2 style="margin:0 0 1rem;">Welcome, {{ user.get_full_name|default:user.username }}</h2>
+                <div class="profile-meta">
+                    <div class="profile-field">
+                        <span class="profile-label">Phone</span>
+                        <span class="profile-value">{{ user.patientprofile.phone|default:"Not provided" }}</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-label">Birth Date</span>
+                        <span class="profile-value">{{ user.patientprofile.date_of_birth|default:"Not provided" }}</span>
+                    </div>
+                    <div class="profile-field">
+                        <span class="profile-label">Address</span>
+                        <span class="profile-value">{{ user.patientprofile.address|default:"Not provided" }}</span>
+                    </div>
+                </div>
+            </div>
+            <a href="{% url 'update_profile' %}" class="btn btn-icon" style="white-space:nowrap; text-decoration:none; font-size:0.85rem;">
+                <i class="fa-solid fa-user-pen"></i> Edit Profile
+            </a>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+
+        <!-- Quick Actions -->
+        <div class="dashboard-card" style="padding:1.4rem;">
+            <div class="section-title"><i class="fa-solid fa-bolt"></i> Quick Actions</div>
+            <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:0.25rem;">
+
+                <a href="{% url 'book_appointment' %}" class="action-link primary">
+                    <div class="action-link-icon stat-icon blue">
+                        <i class="fa-solid fa-calendar-plus"></i>
+                    </div>
+                    <div class="action-link-body">
+                        <div class="action-link-title">Book Appointment</div>
+                        <div class="action-link-desc">Schedule a new visit with a doctor</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right action-link-chevron"></i>
+                </a>
+
+                <a href="{% url 'my_appointments' %}" class="action-link">
+                    <div class="action-link-icon stat-icon cyan">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div class="action-link-body">
+                        <div class="action-link-title">My Appointments</div>
+                        <div class="action-link-desc">View, reschedule or cancel bookings</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right action-link-chevron"></i>
+                </a>
+
+                <a href="{% url 'completed_appointments' %}" class="action-link">
+                    <div class="action-link-icon stat-icon green">
+                        <i class="fa-solid fa-file-waveform"></i>
+                    </div>
+                    <div class="action-link-body">
+                        <div class="action-link-title">Medical Records</div>
+                        <div class="action-link-desc">View past consultations & prescriptions</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right action-link-chevron"></i>
+                </a>
+
+            </div>
+        </div>
+    </div>
+{#    our Doctors card    #}
+    <div class="dashboard-card" style="padding:1.4rem;">
+        <h3>Our Doctors</h3>
+
+        <div class="doctors-grid">
+            {% for doctor in doctors %}
+            <div class="doctor-card">
+
+                <div class="doctor-avatar">
+                    <i class="fa-solid fa-user-doctor"></i>
+                </div>
+
+                <div class="doctor-name">
+                    Dr. {{ doctor.get_full_name }}
+                </div>
+
+                <div class="doctor-specialty">
+                    {{ doctor.doctorprofile.specialization|default:"General Physician" }}
+                </div>
+
+                <div class="doctor-rating">
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star"></i>
+                    <i class="fa-solid fa-star-half-stroke"></i>
+                </div>
+
+                <a href="{% url 'book_appointment_from_DoctorList' doctor.id %}" class="book-btn">
+                    Book Appointment
+                </a>
+
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

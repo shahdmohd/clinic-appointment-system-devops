@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{% if form.instance.pk %}Edit{% else %}Create{% endif %} Exception - ClinicLife{% endblock %}
+
+{% block content %}
+<div class="form-page-container fade-in-up">
+
+    <a href="{% url 'exception_list' %}" class="back-link">
+        <i class="fa-solid fa-arrow-left"></i> Back to Exceptions
+    </a>
+
+    <div class="form-card">
+
+        <div class="form-card-header">
+            <div class="form-card-header-icon amber">
+                <i class="fa-solid fa-calendar-xmark"></i>
+            </div>
+            <h4>{% if form.instance.pk %}Edit Exception{% else %}Create Schedule Exception{% endif %}</h4>
+        </div>
+
+        <div class="form-card-body">
+
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger" style="margin-bottom:1rem;">
+                {% for error in form.non_field_errors %}
+                <p style="margin:0;">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <p class="help-text">{{ field.help_text }}</p>
+                    {% endif %}
+                    {% if field.errors %}
+                        {% for error in field.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="form-card-footer" style="margin:1.5rem -1.5rem -1.5rem; border-radius:0 0 var(--radius-md) var(--radius-md);">
+                    <a href="{% url 'exception_list' %}" class="btn btn-icon" style="text-decoration:none; font-size:0.85rem;">
+                        <i class="fa-solid fa-xmark"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn-primary btn-icon" style="font-size:0.88rem;">
+                        <i class="fa-solid fa-check"></i>
+                        {% if form.instance.pk %}Update{% else %}Create{% endif %} Exception
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const dayOffCheckbox = document.getElementById('id_is_day_off');
+        const startTimeField = document.getElementById('id_override_start_time');
+        const endTimeField   = document.getElementById('id_override_end_time');
+
+        function toggleOverrideFields() {
+            const disabled = dayOffCheckbox.checked;
+            [startTimeField, endTimeField].forEach(field => {
+                if (!field) return;
+                field.disabled = disabled;
+                if (disabled) field.value = '';
+                field.closest('.form-group').style.opacity = disabled ? '0.45' : '1';
+                field.closest('.form-group').style.pointerEvents = disabled ? 'none' : '';
+            });
+        }
+
+        if (dayOffCheckbox) {
+            dayOffCheckbox.addEventListener('change', toggleOverrideFields);
+            toggleOverrideFields();
+        }
+    });
+</script>
+{% endblock %}
+
+{% endblock %}

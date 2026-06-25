@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Doctor Dashboard - ClinicLife{% endblock %}
+
+{% block content %}
+<div class="dashboard-container fade-in-up">
+
+    <!-- Doctor Profile Header -->
+    <div class="dashboard-card"
+        style="margin-bottom:1.5rem; padding:1.75rem 2rem; border-left:3px solid var(--accent);">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+            <div style="flex:1;">
+                <div class="section-title" style="color:var(--accent);"><i class="fa-solid fa-stethoscope"></i> Doctor
+                    Portal</div>
+                <h2 style="margin:0 0 1rem;">Dr. {{ user.get_full_name|default:user.username }}</h2>
+                <div class="profile-meta">
+                    <div class="profile-field">
+                        <span class="profile-label">Specialization</span>
+                        <span class="profile-value" style="color:var(--accent);">
+                            {% if user.doctorprofile %} {{ user.doctorprofile.specialization }}{% else %}General
+                            Medicine{% endif %}
+                        </span>
+                    </div>
+                    {% if user.doctorprofile.bio %}
+                    <div class="profile-field" style="flex:1; min-width:250px;">
+                        <span class="profile-label">Professional Bio</span>
+                        <span class="profile-value"
+                            style="font-weight:400; color:var(--text-secondary); font-size:0.9rem;">{{ user.doctorprofile.bio }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+               
+                <a href="{% url 'update_profile' %}" class="btn btn-icon"
+                    style="white-space:nowrap; text-decoration:none; font-size:0.85rem;">
+                    <i class="fa-solid fa-user-pen"></i> Edit Profile
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+
+    
+
+        <!-- My Schedule -->
+        <div class="dashboard-card" style="padding:1.4rem;">
+            <div class="section-title"><i class="fa-solid fa-calendar-week"></i> Availability</div>
+            <h3 style="margin:0 0 0.5rem;">My Schedule</h3>
+            <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.25rem;">View your weekly availability
+                and manage your working hours.</p>
+            <a href="{% url 'doctor_weekly_schedule' %}" class="btn btn-icon"
+                style="text-decoration:none; font-size:0.85rem;">
+                <i class="fa-solid fa-calendar"></i> View Schedule
+            </a>
+        </div>
+
+        <!-- Daily Queue — YOUR page -->
+        <div class="dashboard-card" style="padding:1.4rem;">
+            <div class="section-title"><i class="fa-solid fa-clipboard-list"></i> Daily Queue</div>
+            <h3 style="margin:0 0 0.5rem;">Today's Queue</h3>
+            <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.25rem;">
+                View checked-in patients and monitor waiting times.
+            </p>
+            <a href="{% url 'doctor_queue' %}" class="btn btn-icon" style="text-decoration:none; font-size:0.85rem;">
+                <i class="fa-solid fa-clipboard-list"></i> Open Queue
+            </a>
+        </div>
+
+        <!-- Queue Manager — TEAMMATES' page -->
+         <!-- Queue Management -->
+        <div class="dashboard-card" style="padding:1.4rem;">
+            <div class="section-title"><i class="fa-solid fa-list-ol"></i> Queue</div>
+            <h3 style="margin:0 0 0.5rem;">Queue Manager</h3>
+            <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.25rem;">View and manage all patient appointment requests.</p>
+            <a href="{% url 'queue_manager' %}" class="btn btn-icon" style="text-decoration:none; font-size:0.85rem; width: 65%;">
+                <i class="fa-solid fa-list"></i> Open Queue Manager
+            </a>
+            
+            <a href="{% url 'staff_appointments' %}" class="btn btn-icon" style="text-decoration:none; font-size:0.85rem; width: 65%; margin-top: 10px;">
+                <i class="fa-solid fa-calendar-days"></i> Search Appointments
+            </a>
+        </div>
+
+         <!-- Completed Appointments -->
+        <div class="dashboard-card" style="padding:1.4rem;">
+            <div class="section-title"><i class="fa-solid fa-clipboard-list"></i> Daily Queue</div>
+            <h3 style="margin:0 0 0.5rem;">Completed Appointments</h3>
+            <p style="color:var(--text-muted); font-size:0.88rem; margin-bottom:1.25rem;">
+                View completed appointments and their EMR.
+            </p>
+            <a href="{% url 'completed_appointments' %}" class="btn btn-icon" style="text-decoration:none; font-size:0.85rem;">
+                <i class="fa-solid fa-clipboard-list"></i> Open Completed List
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
