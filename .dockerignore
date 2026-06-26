@@ -1,0 +1,19 @@
+venv/
+.venv/
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+.git
+.gitignore
+
+.env
+.env.prod
+
+.vscode/
+
+.DS_Store
+
+# *.log
