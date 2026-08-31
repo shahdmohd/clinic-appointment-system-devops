@@ -353,10 +353,6 @@ ALB serves the updated Django app
 
 ## Screenshots
 
-### Architecture Diagram
-
-![Architecture Diagram](docs/images/architecture-diagram.png)
-
 ### Jenkins CI Pipeline
 
 ![Jenkins CI](docs/images/jenkins-ci.png)
