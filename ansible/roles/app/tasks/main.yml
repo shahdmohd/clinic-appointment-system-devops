@@ -1,0 +1,105 @@
+- name: Validate required deployment variables
+  ansible.builtin.assert:
+    that:
+      - app_dir is defined
+      - app_dir | length > 0
+      - app_name is defined
+      - app_name | length > 0
+      - aws_region is defined
+      - aws_region | length > 0
+      - ecr_repository_url is defined
+      - ecr_repository_url | length > 0
+      - image_tag is defined
+      - image_tag | length > 0
+      - host_port is defined
+      - container_port is defined
+    fail_msg: "Missing required deployment variables. Jenkins must pass image_tag, ecr_repository_url, and aws_region."
+
+- name: Set Docker image variables
+  ansible.builtin.set_fact:
+    ecr_registry: "{{ ecr_repository_url.split('/')[0] }}"
+    deployed_image: "{{ ecr_repository_url }}:{{ image_tag }}"
+
+- name: Show image that will be deployed
+  ansible.builtin.debug:
+    msg: "Deploying image: {{ deployed_image }}"
+
+- name: Create app directory
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: ec2-user
+    group: ec2-user
+    mode: "0755"
+
+- name: Create production env file
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ app_dir }}/.env"
+    owner: ec2-user
+    group: ec2-user
+    mode: "0600"
+
+- name: Login to Amazon ECR
+  ansible.builtin.shell: |
+    set -o pipefail
+    aws ecr get-login-password --region {{ aws_region }} \
+    | docker login --username AWS --password-stdin {{ ecr_registry }}
+  args:
+    executable: /bin/bash
+  changed_when: false
+
+- name: Pull Docker image from ECR
+  ansible.builtin.command: docker pull {{ deployed_image }}
+
+- name: Run Django migrations
+  ansible.builtin.shell: |
+    docker run --rm \
+      --env-file {{ app_dir }}/.env \
+      {{ deployed_image }} \
+      python manage.py migrate --noinput
+  run_once: true
+
+- name: Stop old container if exists
+  ansible.builtin.shell: docker stop {{ app_name }} || true
+  changed_when: false
+
+- name: Remove old container if exists
+  ansible.builtin.shell: docker rm {{ app_name }} || true
+  changed_when: false
+
+- name: Start new Django container
+  ansible.builtin.shell: |
+    docker run -d \
+      --name {{ app_name }} \
+      --restart unless-stopped \
+      -p {{ host_port }}:{{ container_port }} \
+      --env-file {{ app_dir }}/.env \
+      {{ deployed_image }}
+
+- name: Wait for app to respond locally
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ host_port }}/"
+    method: GET
+    status_code:
+      - 200
+      - 301
+      - 302
+    timeout: 10
+  register: app_health
+  retries: 6
+  delay: 5
+  until: app_health.status in [200, 301, 302]
+
+- name: Remove unused Docker images
+  ansible.builtin.command: docker image prune -f
+  changed_when: false
+
+- name: Check running containers
+  ansible.builtin.command: docker ps
+  register: docker_ps
+  changed_when: false
+
+- name: Show running containers
+  ansible.builtin.debug:
+    var: docker_ps.stdout_lines

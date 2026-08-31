@@ -1,0 +1,19 @@
+variable "aws_region" {
+  type    = string
+  default = "us-east-1"
+}
+
+variable "project_name" {
+  type    = string
+  default = "clinic"
+}
+
+variable "tags" {
+  type = map(string)
+
+  default = {
+    Project   = "clinic"
+    ManagedBy = "Terraform"
+    Purpose   = "Terraform Backend"
+  }
+}
