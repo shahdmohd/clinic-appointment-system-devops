@@ -1,0 +1,13 @@
+services:
+  web:
+    image: 724413959426.dkr.ecr.us-east-1.amazonaws.com/clinic_image:latest
+    container_name: clinic_web
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./app/.env.prod
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn clinic_system.wsgi:application --bind 0.0.0.0:8000"
+    restart: unless-stopped

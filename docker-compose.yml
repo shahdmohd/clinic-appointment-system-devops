@@ -12,34 +12,22 @@ services:
       - ./app/.env
     depends_on:
       - db
-    networks:
-      - frontend
+
 
 
   db:
     image: postgres:16
     container_name: clinic_db
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: clinic_db
-      POSTGRES_USER: clinic_user
-      POSTGRES_PASSWORD: clinic_pass
+    env_file:
+      - ./app/.env
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - frontend
-      # - backend
 
 
-networks:
-  frontend:
-    driver: bridge
 
-  # backend:
-  #   driver: bridge
-  #   internal: true
 
 volumes:
   postgres_data:

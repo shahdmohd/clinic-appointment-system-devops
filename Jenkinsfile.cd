@@ -1,0 +1,156 @@
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'IMAGE_TAG', defaultValue: '', description: 'Docker image tag to deploy')
+    }
+
+    environment {
+        AWS_REGION = 'us-east-1'
+        ANSIBLE_HOST_KEY_CHECKING = 'False'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Read Terraform Outputs') {
+            steps {
+                dir('terraform') {
+                    sh '''
+                        terraform init -input=false
+                        terraform output
+                    '''
+
+                    script {
+                        env.ECR_REPOSITORY_URL = sh(
+                            script: 'terraform output -raw ecr_repository_url',
+                            returnStdout: true
+                        ).trim()
+
+                        env.DATABASE_HOST = sh(
+                            script: 'terraform output -raw rds_endpoint',
+                            returnStdout: true
+                        ).trim()
+
+                        env.DATABASE_PORT = sh(
+                            script: 'terraform output -raw rds_port',
+                            returnStdout: true
+                        ).trim()
+                    }
+                }
+            }
+        }
+
+        stage('Validate Parameters') {
+            steps {
+                script {
+                    if (!params.IMAGE_TAG?.trim()) {
+                        error "IMAGE_TAG parameter is required"
+                    }
+
+                    if (!env.ECR_REPOSITORY_URL?.trim()) {
+                        error "ECR_REPOSITORY_URL was not found from Terraform outputs"
+                    }
+
+                    if (!env.DATABASE_HOST?.trim()) {
+                        error "DATABASE_HOST was not found from Terraform outputs"
+                    }
+
+                    if (!env.DATABASE_PORT?.trim()) {
+                        error "DATABASE_PORT was not found from Terraform outputs"
+                    }
+                }
+
+                sh '''
+                    echo "Deploying image:"
+                    echo "${ECR_REPOSITORY_URL}:${IMAGE_TAG}"
+
+                    echo "Database host from Terraform:"
+                    echo "${DATABASE_HOST}"
+
+                    echo "Database port from Terraform:"
+                    echo "${DATABASE_PORT}"
+                '''
+            }
+        }
+
+        stage('Check Ansible Inventory') {
+            steps {
+                withCredentials([
+                    sshUserPrivateKey(
+                        credentialsId: 'clinic-app-ssh-key',
+                        keyFileVariable: 'SSH_KEY',
+                        usernameVariable: 'SSH_USER'
+                    )
+                ]) {
+                    sh '''
+                        chmod 600 "$SSH_KEY"
+
+                        ansible-inventory \
+                          -i ansible/inventories/aws_ec2.yml \
+                          --graph
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy With Ansible') {
+            steps {
+                withCredentials([
+                    sshUserPrivateKey(
+                        credentialsId: 'clinic-app-ssh-key',
+                        keyFileVariable: 'SSH_KEY',
+                        usernameVariable: 'SSH_USER'
+                    ),
+                    string(
+                        credentialsId: 'django-secret-key',
+                        variable: 'DJANGO_SECRET_KEY'
+                    ),
+                    string(
+                        credentialsId: 'clinic-db-password',
+                        variable: 'CLINIC_DB_PASSWORD'
+                    )
+                ]) {
+                    sh '''
+                        chmod 600 "$SSH_KEY"
+
+                        python3 -c 'import json, os; json.dump({
+                            "SECRET_KEY": os.environ["DJANGO_SECRET_KEY"],
+                            "DATABASE_PASSWORD": os.environ["CLINIC_DB_PASSWORD"],
+                            "DATABASE_HOST": os.environ["DATABASE_HOST"],
+                            "DATABASE_PORT": os.environ["DATABASE_PORT"]
+                        }, open("ansible-runtime-vars.json", "w"))'
+
+                        chmod 600 ansible-runtime-vars.json
+
+                        ANSIBLE_ROLES_PATH=ansible/roles ansible-playbook \
+                          -i ansible/inventories/aws_ec2.yml \
+                          ansible/playbooks/deploy.yml \
+                          --private-key "$SSH_KEY" \
+                          -u "$SSH_USER" \
+                          -e ansible_ssh_private_key_file="$SSH_KEY" \
+                          -e ansible_user="$SSH_USER" \
+                          -e "@ansible-runtime-vars.json" \
+                          -e image_tag="${IMAGE_TAG}" \
+                          -e ecr_repository_url="${ECR_REPOSITORY_URL}" \
+                          -e aws_region="${AWS_REGION}"
+
+                        rm -f ansible-runtime-vars.json
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh '''
+                rm -f ansible-runtime-vars.json || true
+            '''
+        }
+    }
+}

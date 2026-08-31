@@ -1,0 +1,109 @@
+// Testing GitHub Webhook
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION = 'us-east-1'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Read Terraform Outputs') {
+            steps {
+                dir('terraform') {
+                    sh '''
+                        terraform init -input=false
+                    '''
+
+                    script {
+                        env.ECR_REPOSITORY_URL = sh(
+                            script: 'terraform output -raw ecr_repository_url',
+                            returnStdout: true
+                        ).trim()
+                    }
+                }
+            }
+        }
+
+        stage('Set Image Tag') {
+            steps {
+                script {
+                    env.IMAGE_TAG = sh(
+                        script: 'git rev-parse --short HEAD',
+                        returnStdout: true
+                    ).trim()
+                }
+
+                sh '''
+                    echo "Image tag:"
+                    echo "${IMAGE_TAG}"
+
+                    echo "ECR repository:"
+                    echo "${ECR_REPOSITORY_URL}"
+                '''
+            }
+        }
+
+        stage('Validate Project Files') {
+            steps {
+                sh '''
+                    test -f Dockerfile
+                    test -d app
+                    test -f app/requirements.txt
+                '''
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    docker build \
+                      -t ${ECR_REPOSITORY_URL}:${IMAGE_TAG} \
+                      -t ${ECR_REPOSITORY_URL}:latest \
+                      .
+                '''
+            }
+        }
+
+        stage('Login to Amazon ECR') {
+            steps {
+                sh '''
+                    aws ecr get-login-password --region ${AWS_REGION} \
+                    | docker login --username AWS --password-stdin ${ECR_REPOSITORY_URL%/*}
+                '''
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                sh '''
+                    docker push ${ECR_REPOSITORY_URL}:${IMAGE_TAG}
+                    docker push ${ECR_REPOSITORY_URL}:latest
+                '''
+            }
+        }
+
+        stage('Trigger CD Pipeline') {
+            steps {
+                build job: 'clinic-cd',
+                    wait: true,
+                    parameters: [
+                        string(name: 'IMAGE_TAG', value: env.IMAGE_TAG)
+                    ]
+            }
+        }
+    }
+
+    post {
+        always {
+            sh '''
+                docker image prune -f || true
+            '''
+        }
+    }
+}
